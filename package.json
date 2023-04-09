@@ -4,6 +4,7 @@
   "description": "Do Magical transformations to your strings. For Example: No support for optional channing ? (Like Vue template etc.) Use this extension to chain with double ampersand instead",
   "version": "0.0.1",
   "license": "GPL-3.0-or-later",
+  "publisher": "nomanHasan",
   "repository": {
     "type": "git",
     "url": "https://github.com/nomanHasan"
@@ -22,10 +23,10 @@
   "contributes": {
     "commands": [
       {
-				"title": "Chain Ampersand",
-				"category": "StringWizard",
-				"command": "stringwizard.chainAmpersand"
-			}
+        "title": "Chain Ampersand",
+        "category": "StringWizard",
+        "command": "stringwizard.chainAmpersand"
+      }
     ]
   },
   "scripts": {
