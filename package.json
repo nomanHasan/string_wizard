@@ -3,6 +3,10 @@
   "displayName": "StringWizard",
   "description": "Do Magical transformations to your strings. For Example: No support for optional channing ? (Like Vue template etc.) Use this extension to chain with double ampersand instead",
   "version": "0.0.1",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nomanHasan"
+  },
   "icon": "string_wizard_128x128.png",
   "engines": {
     "vscode": "^1.77.0"
