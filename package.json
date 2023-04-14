@@ -17,15 +17,27 @@
     "Other"
   ],
   "activationEvents": [
-    "onCommand:stringwizard.chainAmpersand"
+    "onCommand:stringwizard.chainAmpersand",
+    "onCommand:stringwizard.chainAmpersandNewLine",
+    "onCommand:stringwizard.chainOptional"
   ],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
       {
         "title": "Chain Ampersand",
-        "category": "StringWizard",
+        "category": "stringwizard",
         "command": "stringwizard.chainAmpersand"
+      },
+      {
+        "title": "Chain Ampersand with New Line",
+        "category": "stringwizard",
+        "command": "stringwizard.chainAmpersandNewLine"
+      },
+      {
+        "title": "Chain Optional syntax",
+        "category": "stringwizard",
+        "command": "stringwizard.chainOptional"
       }
     ]
   },

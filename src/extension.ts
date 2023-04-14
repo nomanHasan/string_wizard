@@ -1,97 +1,96 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
+import { amperSandChain, chainAmpersand, chainAmpersandNewLine, chainOptional } from './functions';
 
-// This method is called when your extension is activated
-// Your extension is activated the very first time the command is executed
-export function activate(context: vscode.ExtensionContext) {
 
-	// Use the console to output diagnostic information (console.log) and errors (console.error)
-	// This line of code will only be executed once when your extension is activated
-	console.log('Congratulations, your extension "stringwizard" is now active!');
+const increment = (str: string) => str.replace(/-?\d+/g, (n) => String(Number(n) + 1));
+const decrement = (str: string) => str.replace(/-?\d+/g, (n) => String(Number(n) - 1));
 
-	// The command has been defined in the package.json file
-	// Now provide the implementation of the command with registerCommand
-	// The commandId parameter must match the command field in package.json
-	let disposable = vscode.commands.registerCommand('stringwizard.chainAmpersand', () => {
-		// The code you place here will be executed every time your command is executed
-		// Display a message box to the user
+const commandNameFunctionMap: { [key: string]: Function } = {
+	chainAmpersand: chainAmpersand,
+	chainAmpersandNewLine: chainAmpersandNewLine,
+	chainOptional: chainOptional
+};
+const numberFunctionNames = [
+	"increment",
+	"decrement",
+	"sequence",
+	"duplicateAndIncrement",
+	"duplicateAndDecrement",
+];
+const functionNamesWithArgument = ["chop", "truncate", "prune", "repeat"];
 
-		const editor = vscode.window.activeTextEditor;
-		if (!editor) {
-			return;
-		}
-
-		const document = editor.document;
-		const selection = editor.selection;
-		const selectedText = editor.document.getText(editor.selection);
-		const modifiedText = amperSandChain(selectedText);
-		editor.edit((editBuilder) => {
-			editBuilder.replace(selection, modifiedText);
-		});
-
-		console.log(`Selected text is ${selectedText}!`);
-		console.log(`Selected text is ${selectedText}!`);
-	});
-
-	context.subscriptions.push(disposable);
-}
-
-// This method is called when your extension is deactivated
-export function deactivate() { }
-
-function amperSandChain(text: string) {
-	// If Text is anything but a javascript path with dots, return the text
-	if (
-		text.includes(' ')
-	) {
-		vscode.window.showInformationMessage(`Its not a valid AmpersandChainner Target. Selection Includes Space Character.`);
-		return text;
+const stringFunction = async (commandName: string, context: vscode.ExtensionContext) => {
+	const editor = vscode.window.activeTextEditor;
+	const selectionMap: any = {};
+	if (!editor) {
+		return;
 	}
 
-	// const arr = text.match(/(\w+|\[\'.+?\'\]|\[".+?"\]|\[[\w-]+\])/g) || [];
+	editor.selections.forEach(async (selection, index) => {
+		const text = editor.document.getText(selection);
+		const textParts = text.split("\n");
+		// let stringFunc: (arg0: any) => any, replaced;
+		let replaced: string;
 
-		const arr = text.match(/(\w+|\[[^\]]+\])/g) || [];
-		let result = '';
-		let current = '';
-		for (let i = 0; i < arr.length; i++) {
-			const prop = arr[i];
+		if (functionNamesWithArgument.includes(commandName)) {
+			const value = await vscode.window.showInputBox();
+			let stringFunc = commandNameFunctionMap[commandName](value);
 
-			let conditionalDelimiter = '.';
-			if (current.startsWith('[')) {
-				conditionalDelimiter  = '';
-			}
-			current += (current ? conditionalDelimiter : '') + prop;
-			result += `${current} && `;
+			replaced = textParts
+				.reduce((prev: string[], curr: string): string[] => {
+					prev.push(stringFunc(curr));
+					return prev;
+				}, [])
+				.join("\n");
+		} else if (numberFunctionNames.includes(commandName)) {
+			replaced = commandNameFunctionMap[commandName](text);
+		} else {
+			let stringFunc = commandNameFunctionMap[commandName];
+			replaced = textParts
+				.reduce((prev: string[], curr: string): string[] => {
+					prev.push(stringFunc(curr));
+					return prev;
+				}, [])
+				.join("\n");
+
 		}
-		return result.slice(0, -4);
-}
-function convertToSafeAccess(text: string) {
-  const properties = text.split(/\.|\[(['"]?)([^'"]+)\1\]/);
+		selectionMap[index] = { selection, replaced };
+	});
 
-  let current = '';
-  let output = '';
+	editor.edit((builder) => {
+		Object.keys(selectionMap).forEach((index) => {
+			const { selection, replaced } = selectionMap[index];
+			builder.replace(selection, replaced);
+		});
+	});
 
-  for (let i = 0; i < properties.length; i++) {
-    const prop = properties[i];
+	context.globalState.update('lastAction', commandName);
+};
 
-    if (prop === '') {
-      continue;
-    }
+export function activate(context: vscode.ExtensionContext) {
+	context.globalState.setKeysForSync(['lastAction']);
 
-    if (prop.startsWith('[')) {
-      const match = prop.match(/^\[(['"]?)([^'"]+)\1]$/);
-      if (match) {
-        current += `['${match[2]}']`;
-      } else {
-        current += `[${prop.slice(1)}`;
-      }
-    } else {
-      current += (current ? '.' : '') + prop;
-    }
+	context.subscriptions.push(
+		vscode.commands.registerCommand(
+			`stringwizard.repeatLastAction`,
+			() => {
+				const lastAction: string | undefined = context.globalState.get('lastAction');
+				if (lastAction) {
+					return stringFunction(lastAction, context);
+				}
+			}
+		)
+	);
 
-    output += (output ? ' && ' : '') + current;
-  }
+	Object.keys(commandNameFunctionMap).forEach((commandName) => {
+		context.subscriptions.push(
+			vscode.commands.registerCommand(
+				`stringwizard.${commandName}`,
+				() => stringFunction(commandName, context)
+			)
+		);
+	});
+};
 
-  return output;
-}
